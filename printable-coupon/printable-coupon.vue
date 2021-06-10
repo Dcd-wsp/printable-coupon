@@ -14,11 +14,6 @@
 				Type: String,
 				default: 'posterCanvas'
 			},
-			//画布宽度  (高度为宽度的五分之四自动计算 单位rpx)
-			// width: {
-			// 	type: String,
-			// 	default: '700'
-			// },
 			//优惠券类型 0代金券 1折扣券 2兑换券
 			type: {
 				type: Number,
@@ -32,12 +27,12 @@
 			//优惠券左侧标题
 			leTitle: {
 				//优惠券左侧标题
-				type: String,
+				type: Number,
 				default: ''
 			},
 			//优惠券左侧内容
 			leDesc: {
-				type: String,
+				type: Number,
 				default: ''
 			},
 			//优惠券右侧标题
@@ -69,6 +64,18 @@
 			wxchat: {
 				type: String,
 				default: ''
+			},
+			//门店信息对应的四个图标，强烈建议更改为自己图片服务器内的网络地址图片
+			icons:{
+				type:Object,
+				default(){
+					return{
+						shop: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-8e16d550-f6e0-406f-9b1e-0d2439dfc4c7/e47003dd-8ea2-40c7-b48f-aede0b9af3df.png',
+						address: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-8e16d550-f6e0-406f-9b1e-0d2439dfc4c7/4a1dd675-6368-4a9b-86e1-d54b77e3768f.png',
+						phone: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-8e16d550-f6e0-406f-9b1e-0d2439dfc4c7/f7fc3cd5-9d20-48d1-ad94-e9d9583fd2f6.png',
+						wxchat: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-8e16d550-f6e0-406f-9b1e-0d2439dfc4c7/95d64721-5359-4211-b3cb-168b8a8062f4.png'
+					}
+				}
 			}
 		},
 		data() {
@@ -85,7 +92,6 @@
 					title: "努力加载中.."
 				})
 				const ctx = uni.createCanvasContext(_this.canvasID, _this);
-				ctx.clearRect(0, 0, _this.canvasW, _this.canvasH);
 				_this.canvasW = uni.upx2px(_this.width)
 				_this.canvasH = uni.upx2px(_this.width * 0.8)
 				ctx.setFillStyle('#fff'); //canvas背景颜色
@@ -111,22 +117,31 @@
 						.width / 2,
 					y: beginY + 40
 				}
-				let mX = leftFont.x + ctx.measureText(u).width
-				let mY = leftFont.y
-				let uX = leftFont.x
-				if (_this.type == 1) {
-					u = '折'
-					mX = leftFont.x
-					uX = leftFont.x + ctx.measureText(m).width * 2 + 3
-				}
-				if (_this.type == 2) {
-					u = ''
-					desc1 = ''
-					mY = leftFont.y + 10
-				}
+				
 				//优惠券左侧上
 				ctx.beginPath();
 				_this.textAlign = 'center'
+				let mX = leftFont.x
+				let mY = leftFont.y
+				let uX = 0
+				if(_this.type==0){
+					ctx.setFontSize(uni.upx2px(26));
+					mX = leftFont.x + ctx.measureText(u).width
+					ctx.font = 'normal bold 20px sans-serif';
+					uX = leftFont.x
+				}
+				if (_this.type == 1) {
+					u = '折'
+					ctx.font = 'normal bold 20px sans-serif';
+					uX = leftFont.x + ctx.measureText(m).width
+				}
+				if (_this.type == 2) {
+					m = '兑换券'
+					mX = leftW / 3
+					u = ''
+					desc1 = ''
+					mY = leftFont.y + 15
+				}
 				ctx.setFontSize(uni.upx2px(26));
 				ctx.setFillStyle('#E41F19');
 				ctx.fillText(u, uX, leftFont.y);
@@ -140,7 +155,7 @@
 				_this.textAlign = 'center'
 				ctx.setFontSize(uni.upx2px(24));
 				ctx.setFillStyle('#E41F19');
-				ctx.fillText(desc1, leftFont.x - ctx.measureText(_this.leDesc).width / 2, leftFont.y + 20)
+				ctx.fillText(desc1,leftW / 2 - ctx.measureText(desc1).width / 3, leftFont.y + 20)
 				ctx.closePath();
 
 				//优惠券内部文字(右侧)
@@ -190,12 +205,6 @@
 					ctx.stroke();
 					ctx.closePath();
 
-					const icons = {
-						shop: '../../static/shop.png',
-						address: '../../static/address.png',
-						phone: '../../static/phone.png',
-						wxchat: '../../static/wxchat.png'
-					}
 					const imgY = {
 						shop: bottomSet.rimY + 55,
 						address: bottomSet.rimY + 80,
@@ -203,11 +212,13 @@
 						wxchat: bottomSet.rimY + 135
 					}
 					ctx.setFillStyle('#616161');
-					ctx.drawImage(icons.shop, bottomSet.rimX + 20, bottomSet.rimY + 52, 15, 15)
+					let shopIcon = await _this.getImageInfo(_this.icons.shop)
+					ctx.drawImage(shopIcon, bottomSet.rimX + 20, bottomSet.rimY + 52, 15, 15)
 
 					ctx.setFontSize(uni.upx2px(30));
 					ctx.fillText(_this.shop, bottomSet.rimX + 50, bottomSet.rimY + 64)
-					ctx.drawImage(icons.address, bottomSet.rimX + 20, bottomSet.rimY + 77, 16, 16)
+					let addressIcon = await _this.getImageInfo(_this.icons.address)
+					ctx.drawImage(addressIcon, bottomSet.rimX + 20, bottomSet.rimY + 77, 16, 16)
 					if (_this.address.length > 14) {
 						//地址超过14个字符时则会换行 第一行只能展示14个字符
 						ctx.fillText(_this.address.slice(0, 14), bottomSet.rimX + 50, bottomSet.rimY + 90)
@@ -223,9 +234,11 @@
 						//否则会展示完全
 						ctx.fillText(_this.address, bottomSet.rimX + 50, bottomSet.rimY + 90)
 					}
-					ctx.drawImage(icons.phone, bottomSet.rimX + 20, bottomSet.rimY + 115, 16, 16)
+					let phoneIcon = await _this.getImageInfo(_this.icons.phone)
+					ctx.drawImage(phoneIcon, bottomSet.rimX + 20, bottomSet.rimY + 115, 16, 16)
 					ctx.fillText(_this.phone, bottomSet.rimX + 50, bottomSet.rimY + 129)
-					ctx.drawImage(icons.wxchat, bottomSet.rimX + 20, bottomSet.rimY + 135, 16, 16)
+					let wxchatIcon = await _this.getImageInfo(_this.icons.wxchat)
+					ctx.drawImage(wxchatIcon, bottomSet.rimX + 20, bottomSet.rimY + 135, 16, 16)
 					ctx.fillText(_this.wxchat, bottomSet.rimX + 50, bottomSet.rimY + 149)
 				}
 
@@ -237,7 +250,7 @@
 			setTime(ctx) {
 				return new Promise((resole, err) => {
 					setTimeout(() => {
-						ctx.draw(true, async (ret) => {
+						ctx.draw(false, async () => {
 							let pic = await _this.getNewPic();
 							resole(pic)
 						});
@@ -246,30 +259,33 @@
 			},
 			getNewPic() {
 				return new Promise((resolve, errs) => {
-					uni.canvasToTempFilePath({
-						canvasId: _this.canvasID,
-						quality: 1,
-						complete: (res) => {
-							// 在H5平台下，tempFilePath 为 base64
-							// 关闭showLoading
-							uni.hideLoading();
-							//  储存海报地址  也是分享的地址
-							resolve(res)
-						}
-					}, _this);
+					setTimeout(()=>{
+						uni.canvasToTempFilePath({
+							canvasId: _this.canvasID,
+							quality: 1,
+							complete: (res) => {
+								// 在H5平台下，tempFilePath 为 base64
+								// 关闭showLoading
+								uni.hideLoading();
+								//  储存海报地址  也是分享的地址
+								resolve(res.tempFilePath)
+							}
+						}, _this);
+					},200)
 				})
 			},
 			//获取图片的临时地址
 			getImageInfo(imgSrc) {
 				return new Promise((resolve, errs) => {
-					setTimeout(() => {
-						uni.getImageInfo({
-							src: imgSrc,
-							success: (image) => {
-								resolve(image);
-							},
-						});
-					}, 1000)
+					uni.getImageInfo({
+						src: imgSrc,
+						success: (image) => {
+							resolve(image.path);
+						},
+						fail: (err) => {
+							console.error('getImageInfo:',err)
+						}
+					});
 				});
 			},
 			/**
@@ -393,7 +409,3 @@
 		},
 	}
 </script>
-
-<style lang="scss">
-
-</style>
